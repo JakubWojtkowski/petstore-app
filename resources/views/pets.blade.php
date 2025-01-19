@@ -13,14 +13,9 @@
         <h1 class="text-3xl font-bold text-center text-blue-600 mb-6 flex flex-col gap-2">petstore-API<span
                 class="text-xs">Jakub Wojtkowski ©</span></h1>
 
-        <!-- Dodaj zwierzę formularz -->
+        <!-- Dodaj zwierze formularz -->
         <form id="addPetForm" class="mb-6 p-4 border rounded bg-blue-50 shadow">
             <h2 class="text-xl font-semibold text-blue-800 mb-4">Add Pet</h2>
-            <div class="mb-4">
-                <label for="id" class=" block text-sm font-medium">ID</label>
-                <input type="number" required min="1" max="99999999" step="1" id="id" name="id"
-                    class="border rounded w-full p-2" placeholder="Enter pet ID" required>
-            </div>
             <div class="mb-4">
                 <label for="name" class="block text-sm font-medium">Name</label>
                 <input type="text" id="name" name="name" class="border rounded w-full p-2" placeholder="Enter pet name"
@@ -36,7 +31,6 @@
             </div>
             <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Add Pet</button>
         </form>
-
 
         <!-- Formularz aktualizacji zwierzęcia -->
         <form id="updatePetForm" class="mb-6 p-4 border rounded bg-yellow-50 shadow">
@@ -89,21 +83,27 @@
                 Pet</button>
         </form>
 
-        <!-- Formularz dodania zdjęcia zwierzęciu o danym id -->
-        <form id="uploadImageForm" class="mb-6 p-4 border rounded bg-indigo-50 shadow">
-            <h2 class="text-xl font-semibold text-indigo-800 mb-4">Upload Image</h2>
+        <!-- Formularz dodania zdjęcia zwierzęciu o danym ID -->
+        <form id="uploadImageForm" onsubmit="uploadImage(event)" class="mb-6 p-4 border rounded bg-purple-50 shadow">
+            <h2 class="text-xl font-semibold text-purple-800 mb-4">Upload Image for Pet</h2>
+
             <div class="mb-4">
-                <label for="uploadPetId" class="block text-sm font-medium">Pet ID</label>
-                <input type="number" id="uploadPetId" name="id" class="border rounded w-full p-2"
-                    placeholder="Enter pet ID" required>
+                <label for="uploadPetId" class="block text-sm font-medium text-purple-700">Pet ID</label>
+                <input type="text" id="uploadPetId" name="uploadPetId" class="border rounded w-full p-2"
+                    placeholder="Enter Pet ID" required>
             </div>
+
             <div class="mb-4">
-                <label for="file" class="block text-sm font-medium">Choose File</label>
-                <input type="file" id="file" name="file" class="border rounded w-full p-2" required>
+                <label for="fileUrl" class="block text-sm font-medium text-purple-700">Image URL</label>
+                <input type="url" id="fileUrl" name="fileUrl" class="border rounded w-full p-2"
+                    placeholder="Enter Image URL" required>
             </div>
-            <button type="submit" class="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600">Upload
+
+            <button type="submit" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">Upload
                 Image</button>
         </form>
+
+
 
 
         <!-- Formularz usunięcia zwierzęcia -->
@@ -194,10 +194,6 @@
             }
         }
 
-        // Podłączenie zdarzenia do formularza
-        document.getElementById('addPetForm').addEventListener('submit', addPet);
-
-
         // Aktualizacja zwierzęcia, obsługa błędu - zwrócony zostaje alert
         async function updatePet(event) {
             event.preventDefault();
@@ -217,7 +213,7 @@
             }
         }
 
-        // Usunięcie zwierzęcia na podstawie ID
+        // Usuniecie zwierzęcia na podstawie ID
         async function deletePet(event) {
             event.preventDefault();
             try {
@@ -234,6 +230,48 @@
                 alert(error.message);
             }
         }
+
+        // Obsługa przesłania obrazu na podstawie ID
+        async function uploadImage(event) {
+            event.preventDefault();
+
+            try {
+                // Pobranie wartości z formularza
+                const id = document.getElementById('uploadPetId').value;
+                const fileUrlInput = document.getElementById('fileUrl');
+                const fileUrl = fileUrlInput.value; // URL obrazu
+
+
+                if (!fileUrl) {
+                    alert('Please provide a valid image URL!');
+                    return;
+                }
+
+                const response = await fetch(`/api/pet/${id}/uploadImage`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        file_url: fileUrl,
+                    }),
+                });
+
+                // Obsługa odpowiedzi
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `Error: ${response.statusText}`);
+                }
+
+                alert('Image uploaded successfully!');
+                document.getElementById('uploadImageForm').reset(); // Wyczyść formularz
+            } catch (error) {
+                alert('Image upload failed!');
+                alert(error.message); // Wyświetl błąd użytkownikowi
+            }
+        }
+
+
 
         // Listeningi -------------------------------------------
 
@@ -256,6 +294,12 @@
 
         // update form
         document.getElementById('updatePetForm').addEventListener('submit', updatePet);
+
+        // upload image url form
+        document.getElementById('uploadImageForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            uploadImage(event);
+        });
 
         // delete form
         document.getElementById('deletePetForm').addEventListener('submit', deletePet);

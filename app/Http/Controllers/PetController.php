@@ -54,7 +54,7 @@ class PetController extends Controller
         return response()->json($response->json(), $response->status());
     }
 
-    // Usunięcie zwierzęcia na podstawie ID
+    // Usuniecie zwierzęcia na podstawie ID
     public function deletePet(int $id)
     {
         $response = Http::delete("{$this->apiUrl}/pet/{$id}");
@@ -62,13 +62,61 @@ class PetController extends Controller
         return response()->json($response->json(), $response->status());
     }
 
-    // Wspólna metoda walidacji danych dla zwierzęcia
+    // Funkcja do przesyłania obrazu zwierzęcia na podstawie jego ID
+    public function uploadImage(Request $request, int $petId)
+    {
+        if (!$petId) {
+            return response()->json(['error' => 'No petId provided. Try again?'], 400);
+        }
+
+        $validated = $request->validate([
+            'file_url' => 'required|url',
+        ]);
+
+        // Pobranie URL obrazu
+        $fileUrl = $request->input('file_url');
+
+        if (!$fileUrl) {
+            return response()->json(['error' => 'No file URL provided'], 400);
+        }
+
+        $existingPet = $this->getPetById($petId);
+        if (!$existingPet) {
+            return response()->json(['error' => 'Pet not found'], 404);
+        }
+
+        // Dodanie URL obrazu do listy photoUrls
+        $existingPet['photoUrls'][] = $fileUrl;
+
+        // "aktualizacja" w bazie danych
+        $this->deletePet($petId); //
+        $this->addPet($existingPet);
+
+        // Pobranie zaktualizowanego zwierzęcia
+        $updatedPet = $this->getPetById($petId);
+
+        if ($updatedPet) {
+            return response()->json($updatedPet, 200);
+        } else {
+            return response()->json(['error' => "Pet couldn't be updated."], 304);
+        }
+    }
+
+    // Metoda walidacji danych
     private function validatePet(Request $request): array
     {
         return $request->validate([
-            'id' => 'required|integer',
+            'id' => 'nullable|integer',
             'name' => 'required|string',
             'status' => 'required|string|in:available,pending,sold',
+            'photoUrls' => 'nullable|array',
+            'photoUrls.*' => 'string', // Każdy element w `photoUrls` musi być ciągiem znaków
+            'tags' => 'nullable|array',
+            'tags.*' => 'array', // Każdy element w `tags` musi być tablicą
+            'tags.*.id' => 'nullable|integer', // Opcjonalne pole `id` w tagach
+            'tags.*.name' => 'nullable|string', // Opcjonalne pole `name` w tagach
         ]);
     }
 }
+
+// Rozwiązanie wraz z postawieniem projektu/ustawieniem środowiska oraz instalacją potrzebnych bibliotek zajęła mi kilka godzin podzielonej na etapy pracy, 3h-4h
